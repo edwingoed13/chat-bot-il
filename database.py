@@ -19,6 +19,14 @@ class DatabaseManager:
 
     def create_connection_pool(self):
         try:
+            # Opciones de SSL - Intenta verificar el certificado del servidor
+            ssl_config = {
+                'ssl_disabled': False,
+                # 'ssl_verify_cert': True, # Puedes activar esto si tienes problemas de certificado
+                # 'ssl_verify_identity': True, # Puedes activar esto si tienes problemas de certificado
+                # 'ssl_ca': '/path/to/ca-cert.pem', # Si necesitas un certificado CA específico
+            }
+
             self.connection_pool = pooling.MySQLConnectionPool(
                 pool_name="incalake_pool",
                 pool_size=5,
@@ -28,7 +36,8 @@ class DatabaseManager:
                 database=os.getenv("DB_NAME"),
                 port=int(os.getenv("DB_PORT", 3306)),
                 autocommit=True,
-                ssl_disabled=True
+                # ssl_disabled=True, # <-- ELIMINA esta línea
+                **ssl_config # <-- AÑADE esta línea
             )
             logger.info("✅ Pool de conexiones MySQL creado")
         except mysql.connector.Error as err:
