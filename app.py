@@ -827,12 +827,15 @@ def initialize_app():
     
     logger.info("✅ Inicialización completada")
 
+# En app.py, reemplaza la sección if __name__ == '__main__': con este código:
+
 if __name__ == '__main__':
     initialize_app()
     
-    # Configuración del servidor
-    host = os.getenv('FLASK_HOST', '0.0.0.0')
-    port = int(os.getenv('FLASK_PORT', 5000))
+    # Configuración del servidor - Prioriza $PORT si existe (para PaaS como easypanel.host)
+    # Si no existe $PORT, usa $FLASK_PORT, y si tampoco existe, usa 5000 por defecto.
+    port = int(os.environ.get('PORT', os.environ.get('FLASK_PORT', 5000)))
+    host = os.environ.get('HOST', os.environ.get('FLASK_HOST', '0.0.0.0')) # También por si acaso
     debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
     
     logger.info(f"🌐 Servidor iniciado en {host}:{port} (debug={debug})")
