@@ -1,32 +1,57 @@
-# Usar imagen base de Python
-FROM python:3.9-slim
+# Multi-stage build para optimizar el tamaño de la imagen
+FROM python:3.11-slim as builder
 
-# Instalar dependencias del sistema si son necesarias
+# Instalar dependencias de construcción
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar requirements primero (para mejor cache de Docker)
+# Copiar requirements.txt
 COPY requirements.txt .
 
-# Actualizar pip y instalar dependencias
+# Instalar dependencias en un directorio virtual
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Copiar el resto del código
+# Etapa final
+FROM python:3.11-slim
+
+# Crear usuario no-root para seguridad
+RUN useradd --create-home --shell /bin/bash app
+
+# Instalar solo las dependencias runtime necesarias
+RUN apt-get update && apt-get install -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar las dependencias instaladas desde la etapa builder
+COPY --from=builder /root/.local /home/app/.local
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar el código de la aplicación
 COPY . .
 
-# Crear directorio para logs si no existe
-RUN mkdir -p /app/logs
+# Cambiar propietario de los archivos al usuario app
+RUN chown -R app:app /app
+
+# Cambiar al usuario app
+USER app
+
+# Asegurar que el PATH incluya el directorio local de pip
+ENV PATH=/home/app/.local/bin:$PATH
 
 # Exponer el puerto
 EXPOSE 5000
 
-# Verificar que app.py existe
-RUN ls -la /app/
+# Variables de entorno para Flask
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=production
+ENV PYTHONPATH=/app
 
 # Comando para ejecutar la aplicación
 CMD ["python", "app.py"]
