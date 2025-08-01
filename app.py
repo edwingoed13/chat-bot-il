@@ -827,16 +827,52 @@ def initialize_app():
     
     logger.info("✅ Inicialización completada")
 
+@app.route('/', methods=['GET'])
+def root():
+    """Endpoint raíz para verificar que la API está funcionando."""
+    return jsonify({
+        "message": "IncaLake Chatbot API is running",
+        "version": "3.1.0",
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "endpoints": [
+            "/health",
+            "/register_user", 
+            "/chat",
+            "/destinations",
+            "/session/<session_id>/history",
+            "/session/<session_id>/clear"
+        ]
+    })
+
+@app.route('/app')
+def serve_app():
+    """Sirve la aplicación web desde static/index.html"""
+    try:
+        from flask import send_from_directory
+        return send_from_directory('static', 'index.html')
+    except Exception:
+        return jsonify({"error": "Frontend no encontrado"}), 404
+
 # En app.py, reemplaza la sección if __name__ == '__main__': con este código:
 
 if __name__ == '__main__':
     initialize_app()
     
-    # Configuración del servidor - Prioriza $PORT si existe (para PaaS como easypanel.host)
-    # Si no existe $PORT, usa $FLASK_PORT, y si tampoco existe, usa 5000 por defecto.
-    port = int(os.environ.get('PORT', os.environ.get('FLASK_PORT', 5000)))
-    host = os.environ.get('HOST', os.environ.get('FLASK_HOST', '0.0.0.0')) # También por si acaso
-    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    # Para Easypanel - usar el puerto exacto de la variable de entorno
+    port = int(os.environ.get('PORT', 5000))
+    host = '0.0.0.0'
     
-    logger.info(f"🌐 Servidor iniciado en {host}:{port} (debug={debug})")
-    app.run(host=host, port=port, debug=debug)
+    # Log detallado para debugging
+    logger.info(f"🌐 Iniciando servidor en {host}:{port}")
+    logger.info(f"🔧 PORT env var: {os.environ.get('PORT', 'No definida')}")
+    logger.info(f"🔧 FLASK_ENV: {os.environ.get('FLASK_ENV', 'No definida')}")
+    
+    # Configuración para producción
+    app.run(
+        host=host, 
+        port=port, 
+        debug=False, 
+        threaded=True,
+        use_reloader=False  # Importante para producción
+    )
