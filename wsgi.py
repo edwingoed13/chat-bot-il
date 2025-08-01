@@ -1,7 +1,6 @@
-
 #!/usr/bin/env python3
 """
-wsgi.py - Punto de entrada WSGI para Easypanel
+wsgi.py - Punto de entrada WSGI para producción en Easypanel
 """
 
 import os
@@ -18,10 +17,18 @@ sys.path.insert(0, os.path.dirname(__file__))
 from app import app, initialize_app
 
 # Inicializar aplicación
-initialize_app()
+try:
+    initialize_app()
+    print("✅ Aplicación inicializada correctamente para WSGI")
+except Exception as e:
+    print(f"❌ Error inicializando aplicación: {e}")
+    raise
 
-# Configuración específica para Easypanel
+# Para Gunicorn
+application = app
+
+# Para testing local con wsgi
 if __name__ == "__main__":
-    # Solo para testing, normalmente Gunicorn maneja esto
     port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Ejecutando en modo de desarrollo en puerto {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
